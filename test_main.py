@@ -1,4 +1,5 @@
 import pytest
+import random
 from fastapi.testclient import TestClient
 from main import app
 
@@ -9,7 +10,7 @@ def test_post_create_recipe():
     response = client.post(
         "/create/recipe/",
         json={
-            "dish_name": "Test Dish",
+            "dish_name": "Test Dish {name}".format(name=random.randint(1, 1000)),
             "cooking_time": 15,
             "ingredients": "Test ingredients",
             "description_dish": "Test description"
