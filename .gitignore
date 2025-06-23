@@ -1,0 +1,22 @@
+# Базы данных
+*.db
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Виртуальная среда
+.venv/
+.env/
+env/
+venv/
+
+# Файлы настроек IDE
+.vscode/
+.idea/
+
+# Логи и временные файлы
+*.log
+*.tmp
+*.bak
