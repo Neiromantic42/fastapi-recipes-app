@@ -1,33 +1,43 @@
-from typing import List  # Импортируем типы для работы с аннотациями
+# Импортируем декоратор для работы с асинхронным контекстом
+from contextlib import (
+    asynccontextmanager,
+)
+
+# Импортируем типы для работы с аннотациями
+from typing import List
+
+# Импортируем основной класс FastAPI для создания приложения
 from fastapi import (
     FastAPI,
     HTTPException,
-)  # Импортируем основной класс FastAPI для создания приложения
+)
 from sqlalchemy.exc import IntegrityError
+
+# Для выполнения асинхронных SQL-запросов через SQLAlchemy
 from sqlalchemy.future import (
     select,
-)  # Для выполнения асинхронных SQL-запросов через SQLAlchemy
+)
+
 import models  # Модуль с моделями SQLAlchemy (например, CookBook)
 import schemas  # Модуль с Pydantic-схемами для валидации данных
+
+# Импортируем асинхронный движок и сессии для работы с БД
 from database import (
-    engine,
     async_session,
-)  # Импортируем асинхронный движок и сессии для работы с БД
-from contextlib import (
-    asynccontextmanager,
-)  # Импортируем декоратор для работы с асинхронным контекстом
+    engine,
+)
 
 
-# объявляем механизм жизненного цикла приложения, который заменяет старые события
+# объявляем механизм жизненного цикла приложения
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Создаём подключение к базе данных и начинаем транзакцию
     async with engine.begin() as conn:
         # Создаём все таблицы, определённые в моделях, если они ещё не созданы
         await conn.run_sync(models.Base.metadata.create_all)
-    # yield ставит точку паузы. Весь код до yield выполняется при старте приложения.
+    # yield ставит точку паузы. Весь код до yield выполняется при старте
     yield  # Здесь приложение будет работать, обрабатывать запросы и маршруты.
-    await engine.dispose()  # Очищаем ресурсы и закрываем соединения с базой данных.
+    await engine.dispose()  # Очищаем ресурсы и закрываем соединения
 
 
 # Создаём экземпляр приложения FastAPI и передаём ему механизм жизненного цикла
@@ -49,9 +59,10 @@ async def create_recipe(recipe: schemas.CookBookIn) -> models.CookBook:
     except IntegrityError:
         raise HTTPException(
             status_code=409,
-            detail="A recipe with this dish name already exists. Please use a unique name.",
+            detail="A recipe with this dish name already exists."
+            " Please use a unique name.",
         )
-    return new_recipe  # Возвращаем созданный рецепт (FastAPI преобразует в CookBookOut)
+    return new_recipe  # Возвращаем рецепт(FastAPI преобразует в CookBookOut)
 
 
 # GET-запрос для получения детального рецепта + 1 просмотр
@@ -61,8 +72,8 @@ async def create_recipe(recipe: schemas.CookBookIn) -> models.CookBook:
 async def get_detailed_recipe(
     recipe_id: int,
 ):  # Асинхронная функция, принимающая recipe_id как целое число
-    async with async_session() as session:  # Создаём асинхронную сессию с базой данных
-        async with session.begin():  # Начинаем транзакцию (автоматически вызовет commit, если не будет ошибок)
+    async with async_session() as session:  # Создаём асинхронную сессию
+        async with session.begin():  # Начинаем транзакцию
             result = await session.execute(  # Выполняем асинхронный SQL-запрос
                 select(models.CookBook).where(
                     models.CookBook.id == recipe_id
@@ -74,23 +85,25 @@ async def get_detailed_recipe(
             if recipes is None:  # Если рецепт не найден (None)
                 raise HTTPException(  # Генерируем исключение с кодом 404
                     status_code=404,
-                    detail=f"Рецепт с id {recipe_id} не существует. Пожалуйста, укажите существующий id",
+                    detail=f"Рецепт с id {recipe_id} не существует."
+                    f" Пожалуйста, укажите существующий id",
                 )
             else:  # Если рецепт найден
-                recipes.views_counter += 1  # Увеличиваем счётчик просмотров на 1
-                # Поскольку мы находимся в блоке session.begin(), это изменение будет автоматически закоммичено
+                recipes.views_counter += 1  # Увеличиваем счётчик
+                # Поскольку мы находимся в блоке session.begin(),
+                # это изменение будет автоматически закоммичено
 
-    return recipes  # Возвращаем объект рецепта (FastAPI автоматически сериализует его в соответствии с response_model)
+    return recipes  # Возвращаем объект рецепта
 
 
 # GET-запрос для получения отсортированного списка рецептов
 @app.get("/recipes", response_model=List[schemas.CookBookShort])
 async def get_recipes() -> List[models.CookBook]:
-    async with async_session() as session:  # Создаём асинхронную сессию с базой данных
+    async with async_session() as session:  # Создаём асинхронную сессию
         result = await session.execute(
             select(models.CookBook).order_by(
-                models.CookBook.views_counter.desc(),  # Сортируем объекты по кол-ву просмотров в порядке убывания
-                models.CookBook.cooking_time.asc(),  # Сортируем объекты по времени приготовления меньше времени выше в результате
+                models.CookBook.views_counter.desc(),
+                models.CookBook.cooking_time.asc(),
             )
         )
         recipes = result.scalars().all()  # Извлекаем все объекты Book
