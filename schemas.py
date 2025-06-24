@@ -51,9 +51,7 @@ class CookBookOut(BaseCookBook):
     )
 
     class Config:
-        orm_mode = (
-            True  # Включаем поддержку работы с ORM-объектами (SQLAlchemy)
-        )
+        orm_mode = True  # Включаем поддержку работы с ORM-объектами (SQLAlchemy)
 
 
 # Схема, которая будет возвращаться пользователю
