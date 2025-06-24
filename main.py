@@ -109,6 +109,3 @@ async def get_recipes() -> List[models.CookBook]:
         recipes = result.scalars().all()  # Извлекаем все объекты Book
 
     return recipes
-
-def broken_function()
-    return 42
